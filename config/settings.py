@@ -101,6 +101,9 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+LOGIN_URL = '/accounts/login/'  # 追加
+LOGIN_REDIRECT_URL = '/todo/'  # 追加
+LOGOUT_REDIRECT_URL = '/accounts/login/'  # 追加
 
 # Internationalization
 # https://docs.djangoproject.com/en/2.2/topics/i18n/
