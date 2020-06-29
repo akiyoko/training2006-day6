@@ -1,15 +1,79 @@
 from datetime import date
+
+from django.contrib.auth import get_user_model
 from django.test import TestCase
 
 from todo.models import Todo
+
+User = get_user_model()
+
+
+class TestTodoCreateView(TestCase):
+    """TodoCreateViewのテスト"""
+
+    PASSWORD = 'pass12345'
+
+    def setUp(self):
+        # ログインユーザーを作成
+        self.user = User.objects.create_user('test_user', password=self.PASSWORD)
+        # ログインをシミュレート
+        self.client.login(username=self.user.username, password=self.PASSWORD)
+
+    def test_get_success(self):
+        """/todo/create/へのGETリクエスト（正常系）"""
+        # テストクライアントでGETリクエストをシミュレート
+        response = self.client.get('/todo/create/')
+
+        # TODO変更画面に遷移することを検証
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'todo/todo_create.html')
+        self.assertContains(response, '<h1>TODO追加</h1>')
+
+    def test_post_success(self):
+        """/todo/create/へのPOSTリクエスト（正常系）"""
+        # テストクライアントでPOSTリクエストをシミュレート
+        response = self.client.post('/todo/create/', {
+            'title': 'test-1',
+        }, follow=True)
+
+        # TODOリスト画面にリダイレクトされることを検証
+        self.assertRedirects(response, '/todo/')
+        self.assertTemplateUsed(response, 'todo/todo_list.html')
+        self.assertContains(response, '<h1>TODOリスト</h1>')
+
+    def test_post_if_title_is_blank(self):
+        """/todo/update/<pk>/へのPOSTリクエスト（バリデーションNG）"""
+        # テストクライアントでPOSTリクエストをシミュレート
+        response = self.client.post('/todo/create/', {
+            'title': '',
+        })
+
+        # TODO変更画面に遷移することを検証
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'todo/todo_create.html')
+        self.assertContains(response, '<h1>TODO追加</h1>')
+
+        # エラーメッセージが表示されることを検証
+        self.assertEqual(
+            response.context_data['form'].errors,
+            {'title': ['このフィールドは必須です。']}
+        )
 
 
 class TestTodoUpdateView(TestCase):
     """TodoUpdateViewのテスト"""
 
+    PASSWORD = 'pass12345'
+
     def setUp(self):
+        # ログインユーザーを作成
+        self.user = User.objects.create_user('test_user', password=self.PASSWORD)
+        # ログインをシミュレート
+        self.client.login(username=self.user.username, password=self.PASSWORD)
+
         self.today = date(2020, 6, 1)
-        self.todo = Todo.objects.create(title='test-1', expiration_date=self.today)
+        self.todo = Todo.objects.create(title='test-1', expiration_date=self.today,
+                                        created_by=self.user)
 
     def test_get_success(self):
         """/todo/update/<pk>/へのGETリクエスト（正常系）"""
